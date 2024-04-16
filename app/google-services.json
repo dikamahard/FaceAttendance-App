@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "625654421569",
+    "firebase_url": "https://facesensi-7ea1a-default-rtdb.firebaseio.com",
+    "project_id": "facesensi-7ea1a",
+    "storage_bucket": "facesensi-7ea1a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:625654421569:android:f57a49ae85705af8208ec0",
+        "android_client_info": {
+          "package_name": "com.dikamahard.presensi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCrOqmySG7UWjvtq3PZV9i3v3P4n-gfitQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
