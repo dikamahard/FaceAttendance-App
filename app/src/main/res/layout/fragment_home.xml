@@ -57,6 +57,17 @@
             app:layout_constraintEnd_toStartOf="@+id/btn_Camera"
             app:layout_constraintTop_toTopOf="@+id/btn_Camera" />
 
+        <Button
+            android:text="tes"
+            android:id="@+id/btn_tes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            app:layout_constraintBottom_toBottomOf="@+id/btn_Camera"
+            app:layout_constraintStart_toEndOf="@+id/btn_Camera"
+            app:layout_constraintTop_toTopOf="@+id/btn_Camera"
+            app:layout_constraintVertical_bias="0.0" />
+
         <ImageView
             android:id="@+id/iv_result"
             android:layout_width="match_parent"
@@ -68,6 +79,17 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_name" />
+
+        <ProgressBar
+            android:id="@+id/progress_bar_home"
+            style="@android:style/Widget.ProgressBar"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

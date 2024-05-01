@@ -28,6 +28,7 @@ import com.bumptech.glide.request.transition.Transition
 import com.dikamahard.presensi.databinding.FragmentHomeBinding
 import com.dikamahard.presensi.helper.createCustomTempFile
 import com.example.faceverify.models.mfn.MobileFaceNet
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -41,25 +42,29 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import kotlin.math.log
 
 class HomeFragment : Fragment() {
 
     companion object {
         private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)
         private const val REQUEST_CODE_PERMISSIONS = 10
+        private const val RECORD = "records"
     }
 
 
     // This property is only valid between onCreateView and
     // onDestroyView.
 
-    private lateinit var viewModel: HomeViewModel
+    private lateinit var homeViewModel: HomeViewModel
     private lateinit var binding: FragmentHomeBinding
     private var getFile: File? = null
-    private var db = Firebase.database
+    private var database = Firebase.database
     private var storage = Firebase.storage
 
-    val testRef = storage.reference.child("record/test2.jpg")
+    private val testRef = storage.reference.child("record/test2.jpg")
     val downloadRef = storage.reference.child("master/1.JPG")
 
     override fun onRequestPermissionsResult(
@@ -105,45 +110,28 @@ class HomeFragment : Fragment() {
         }
 
         // VARIABLE NEEDED FOR IMAGE COMPARE
-        val listOfBitmaps: MutableList<Bitmap> = mutableListOf()
-        val listOfNames: MutableList<String> = mutableListOf()
+        lateinit var listOfBitmaps: List<Bitmap>
+        lateinit var listOfNames: List<String>
         val listOfCroppedBitmaps: MutableList<Bitmap> = mutableListOf() // what we will use for compare
 
         lateinit var croppedCaptureBitmap: Bitmap // what we will use for compare
 
-        val masterRef = storage.reference.child("master")
+        homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
+        // TODO: Use the ViewModel
+        homeViewModel.isLoading.observe(viewLifecycleOwner) {
+            Log.d("DEBUG", "OBSERVE LOADING $it")
+            showLoading(it)
+        }
 
-        masterRef.listAll()
-            .addOnSuccessListener{ result ->
+        homeViewModel.images.observe(viewLifecycleOwner) { images ->
+            listOfBitmaps = images
+        }
 
-                //download all img to a temp local file
-                for (ref in result.items){
-                    //Log.d("MASTER REF", "$ref")
-                    ref.downloadUrl.addOnSuccessListener {imageUrl ->
-                        Glide.with(requireContext())
-                            .asBitmap()
-                            .load(imageUrl)
-                            .into(object : CustomTarget<Bitmap>() {
-                                override fun onResourceReady(bitmap: Bitmap, transition: Transition<in Bitmap>?) {
-                                    // Add the Bitmap to the list
-                                    listOfBitmaps.add(bitmap)
-                                    listOfNames.add(ref.name)
-                                    Log.d("GLIDE", "${listOfBitmaps.size} ")
-                                    Log.d("GLIDE", "$listOfBitmaps ")
+        homeViewModel.names.observe(viewLifecycleOwner) { names ->
+            listOfNames = names
+            Log.d("TAG", "names observe: $listOfNames")
+        }
 
-                                }
-
-                                override fun onLoadCleared(placeholder: Drawable?) {
-                                    // Not needed for this case
-                                }
-                            })
-
-                    }
-                }
-            }
-            .addOnFailureListener {
-                Log.e("FirebaseStorage", "Error listing files: ${it.message}")
-            }
 
         Log.d("TAG", "onViewCreated: should be after glide")
         // ML KIT
@@ -165,11 +153,31 @@ class HomeFragment : Fragment() {
         }
 
 
-        viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
-        // TODO: Use the ViewModel
+
 
         binding.btnCamera.setOnClickListener {
             startCamera()
+        }
+
+        binding.btnTes.setOnClickListener {
+            val time = Calendar.getInstance().time
+            var formatter = SimpleDateFormat("dd-MM-yyyy")
+            val currentDate = formatter.format(time)
+            formatter = SimpleDateFormat("HH:mm:ss")
+            val currentTime = formatter.format(time)
+            val recordData = mapOf<String, Boolean>(
+                currentTime to true
+            )
+            Log.d("TAG", "onViewCreated: $currentDate")
+
+            database.reference.child(RECORD).child("9999").child(currentDate).updateChildren(recordData)
+                .addOnSuccessListener {
+                Log.d("TAG", "onViewCreated: sukses")
+                }.addOnFailureListener {
+                    Log.d("TAG", "onViewCreated: $it")
+                }.addOnCompleteListener {
+                    Log.d("TAG", "onViewCreated: $it")
+                }
         }
 
         binding.btnProcess.setOnClickListener {
@@ -217,11 +225,12 @@ class HomeFragment : Fragment() {
                         binding.tvName.text = "Processing Image"
                     }
                 }
+
                 withContext(Dispatchers.Main) {
                     binding.tvName.text = "Processing Completed"
                 }
 
-                // TODO: COMPARE FACES
+                // TODO: COMPARE FACES(done)
                 Log.d("COMPARE", "before compare")
                 var i = 0;
                 for (croppedMasterBitmap in listOfCroppedBitmaps){
@@ -232,10 +241,14 @@ class HomeFragment : Fragment() {
                     }
                     if (similarity > MobileFaceNet.THRESHOLD) {
                         Log.d("COMPARE", "compare found")
-                        /*withContext(Dispatchers.Main) {
-                            binding.ivPreview.setImageBitmap(croppedMasterBitmap)
-                        }*/
-                        //break
+
+                        // TODO: GET image name then Record to database (done)
+                        postAttendance(listOfNames[i])
+
+                        withContext(Dispatchers.Main) {
+                            binding.ivResult.setImageBitmap(croppedMasterBitmap)
+                        }
+                        break
                     }
                     i+=1
                 }
@@ -266,7 +279,7 @@ class HomeFragment : Fragment() {
                 Log.d("DEBUG", "image = ${capturedImage != null}")
                 Log.d("COROUTINE", "Called before Cropping Capture"+ Thread.currentThread().name)
 
-                // TODO: DEBUG BELOW CODE
+                // TODO: DEBUG BELOW CODE (done)
                 try {
                     val faces = faceDetector.process(capturedImage).await()
 
@@ -448,6 +461,39 @@ class HomeFragment : Fragment() {
                 val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
                 //binding.ivPreview.setImageBitmap(bitmap)
             }
+        }
+    }
+
+    private fun postAttendance(userId: String) {
+        val time = Calendar.getInstance().time
+        var formatter = SimpleDateFormat("dd-MM-yyyy")
+        val currentDate = formatter.format(time)
+        formatter = SimpleDateFormat("HH:mm:ss")
+        val currentTime = formatter.format(time)
+        val recordData = mapOf<String, Boolean>(
+            currentTime to true
+        )
+        val id = userId.split('.')[0]
+        Log.d("TAG", "postAttendance: $id")
+
+        database.reference.child(RECORD).child(id).child(currentDate).updateChildren(recordData)
+            .addOnSuccessListener {
+                Log.d("TAG", "onViewCreated: sukses attendance")
+            }.addOnFailureListener {
+                Log.d("TAG", "onViewCreated: $it")
+            }.addOnCompleteListener {
+                Log.d("TAG", "onViewCreated: $it")
+            }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        if(isLoading) {
+            binding.progressBarHome.visibility = View.VISIBLE
+            Log.d("TAG", "loading is visible : ${homeViewModel.isLoading.value}")
+        }else {
+            binding.progressBarHome.visibility = View.GONE
+            Log.d("TAG", "loading is GONE : ${homeViewModel.isLoading.value}")
+
         }
     }
 

@@ -66,6 +66,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Use this dependency to bundle the model with your app
     implementation ("com.google.mlkit:face-detection:16.1.6")
 }
