@@ -231,12 +231,15 @@ class DailyFragment : Fragment() {
 
                 for (name in mappedUser) {
                     val userTime = database.reference.child("dates").child(selectedDate).child(name.key).get().await()
-
-                    if (userTime.value != null) {
+                    Log.d("TAG", "${name.key}: ${userTime.childrenCount} ${userTime.value}")
+                    if (userTime.childrenCount >= 2) {
                         timeIn = userTime.children.first().key.toString().substring(0,5)
                         timeOut = userTime.children.last().key.toString().substring(0,5)
-                    }else {
+                    }else if (userTime.value == null){
                         timeIn = "__.__"
+                        timeOut = "__.__"
+                    }else {
+                        timeIn = userTime.children.first().key.toString().substring(0,5)
                         timeOut = "__.__"
                     }
 
