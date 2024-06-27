@@ -1,11 +1,11 @@
 package com.dikamahard.presensi
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
@@ -28,6 +28,8 @@ import com.bumptech.glide.request.transition.Transition
 import com.dikamahard.presensi.databinding.FragmentHomeBinding
 import com.dikamahard.presensi.helper.createCustomTempFile
 import com.example.faceverify.models.mfn.MobileFaceNet
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
@@ -45,11 +47,12 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import kotlin.math.log
+import kotlin.properties.Delegates
 
 class HomeFragment : Fragment() {
 
     companion object {
-        private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)
+        private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA, android.Manifest.permission.ACCESS_FINE_LOCATION)
         private const val REQUEST_CODE_PERMISSIONS = 10
         private const val RECORD = "records"
     }
@@ -63,6 +66,8 @@ class HomeFragment : Fragment() {
     private var getFile: File? = null
     private var database = Firebase.database
     private var storage = Firebase.storage
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
 
     private val testRef = storage.reference.child("record/test2.jpg")
     val downloadRef = storage.reference.child("master/1.JPG")
@@ -159,7 +164,10 @@ class HomeFragment : Fragment() {
             startCamera()
         }
 
+        /////////////// TODO: EXPERIMENT BUTTON
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
         binding.btnTes.setOnClickListener {
+            /*
             val time = Calendar.getInstance().time
             var formatter = SimpleDateFormat("dd-MM-yyyy")
             val currentDate = formatter.format(time)
@@ -178,13 +186,66 @@ class HomeFragment : Fragment() {
                 }.addOnCompleteListener {
                     Log.d("TAG", "onViewCreated: $it")
                 }
+
+             */
+//            val targetLat = -6.923384445321216  // unpad coordinate
+//            val targetLong = 107.77301948057257
+
+            val targetLat = -6.237438 // home coordinate
+            val targetLong = 106.526787
+
+            val distance = FloatArray(1)
+            getCurrentLocation{ latitude,longitude ->
+                // Use latitude and longitude for your conditional check
+                if (latitude != 0.0 && longitude != 0.0) {
+                    // Location detected, do something
+                    android.location.Location.distanceBetween(targetLat, targetLong, latitude, longitude, distance)
+                    Log.d("TAG", "lat long: $latitude, $longitude")
+                    Log.d("TAG", "Distance: ${distance[0]}")
+                    if (distance[0] <= 1000) {
+                        binding.btnProcess.visibility = View.VISIBLE
+                        binding.btnCamera.visibility = View.VISIBLE
+                    }else{
+                        Toast.makeText(
+                            requireContext(),
+                            "Not In Radius 1000 Meter",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+
+
+                } else {
+                    // No location detected, handle accordingly
+                    Log.d("TAG", "NO LOCATION")
+                }
+            }
+//            android.location.Location.distanceBetween(pointLat, pointLong, locationLat, locationLong, distance)
+//            Log.d("TAG", "onViewCreated: $locationLat")
+            /*
+                        if (locationLat != null && locationLong != null) {
+                            android.location.Location.distanceBetween(pointLat, pointLong, locationLat?:0.0, locationLong?:0.0, distance)
+                            Log.d("TAG", "Distance: ${distance[0]}")
+                        } else {
+                            Log.d("TAG", "Distance not found $locationLat, $locationLong")
+                        }
+
+             */
+
         }
+        ////////////////////
+
 
         binding.btnProcess.setOnClickListener {
             // uploadImage()
             // get img from cloud storage
             // detect faces
             // compare
+
+            // TODO: RESET CONDITION IF TAKING ANOTHER PICTURE
+            if (binding.btnSubmit.visibility == View.VISIBLE) {
+                binding.btnSubmit.visibility = View.INVISIBLE
+            }
 
             val tempFile = File.createTempFile("images", "jpg")
 
@@ -230,9 +291,10 @@ class HomeFragment : Fragment() {
                     binding.tvName.text = "Processing Completed"
                 }
 
-                // TODO: COMPARE FACES(done)
+                // TODO: COMPARE FACES(done) --> ADD CONDITION IF DIDN'T FIND MATCHING FACE
                 Log.d("COMPARE", "before compare")
-                var i = 0;
+                var i = 0
+                var faceMatched = false
                 for (croppedMasterBitmap in listOfCroppedBitmaps){
                     val similarity = mfn.compare(croppedCaptureBitmap, croppedMasterBitmap)
                     Log.d("COMPARE", "comparing ${listOfNames[i]} = $similarity")
@@ -241,23 +303,40 @@ class HomeFragment : Fragment() {
                     }
                     if (similarity > MobileFaceNet.THRESHOLD) {
                         Log.d("COMPARE", "compare found")
+                        faceMatched = true
 
-                        // TODO: GET image name then Record to database (done)
-                        postAttendance(listOfNames[i])
+                        // TODO: GET image name then Record to database (done) --> change to be button press to post attendance(done)
 
                         withContext(Dispatchers.Main) {
                             binding.ivResult.setImageBitmap(croppedMasterBitmap)
+                            binding.btnSubmit.apply {
+                                this.visibility = View.VISIBLE
+                                this.setOnClickListener {
+                                    postAttendance(listOfNames[i])
+                                }
+                            }
                         }
                         break
                     }
                     i+=1
                 }
-                Log.d("COMPARE", "compare done")
 
+                if (!faceMatched) {
+                    withContext(Dispatchers.Main) {
+                        binding.ivResult.setImageResource(R.drawable.noimg)
+                        Toast.makeText(
+                            requireContext(),
+                            "Face Not Found",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                Log.d("COMPARE", "compare done")
 
             }
 
 
+            // Process 1 detect face from camera
             lifecycleScope.launch(Dispatchers.Default) {
                 // get bitmap from camera
                 val capturedBitmap = BitmapFactory.decodeFile(getFile!!.path)
@@ -282,6 +361,13 @@ class HomeFragment : Fragment() {
                 // TODO: DEBUG BELOW CODE (done)
                 try {
                     val faces = faceDetector.process(capturedImage).await()
+                    Log.d("FACES", "$faces")
+
+                    if (faces.isEmpty()) {
+                        throw Exception("No Face Detected")
+                    }else if (faces.size >= 2) {
+                        throw Exception("Multiple Faces Detected")
+                    }
 
                     for (face in faces) {
                         val bounds = face.boundingBox
@@ -297,6 +383,13 @@ class HomeFragment : Fragment() {
 
                 }catch (e: Exception) {
                     Log.e("FaceDetection", "Error detecting camera faces: ${e.message}", )
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            requireContext(),
+                            "${e.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
                 Log.d("COROUTINE", "AFTER FACEDETECT "+ Thread.currentThread().name)
 
@@ -304,7 +397,7 @@ class HomeFragment : Fragment() {
 
 
 
-
+            // Process 2 detect face from firebase
             lifecycleScope.launch(Dispatchers.Default) {
                 for (bitmap in listOfBitmaps) {
                     //lifecycleScope.launch(Dispatchers.Default) {
@@ -466,7 +559,7 @@ class HomeFragment : Fragment() {
 
     private fun postAttendance(userId: String) {
         val time = Calendar.getInstance().time
-        var formatter = SimpleDateFormat("dd-MM-yyyy")
+        var formatter = SimpleDateFormat("MM-dd-yyyy")
         val currentDate = formatter.format(time)
         formatter = SimpleDateFormat("HH:mm:ss")
         val currentTime = formatter.format(time)
@@ -476,9 +569,21 @@ class HomeFragment : Fragment() {
         val id = userId.split('.')[0]
         Log.d("TAG", "postAttendance: $id")
 
+        //TODO: move to repository
+        // to records db ref
         database.reference.child(RECORD).child(id).child(currentDate).updateChildren(recordData)
             .addOnSuccessListener {
-                Log.d("TAG", "onViewCreated: sukses attendance")
+                Log.d("TAG", "onViewCreated: sukses attendance record")
+            }.addOnFailureListener {
+                Log.d("TAG", "onViewCreated: $it")
+            }.addOnCompleteListener {
+                Log.d("TAG", "onViewCreated: $it")
+            }
+
+        //to dates db ref
+        database.reference.child("dates").child(currentDate).child(id).updateChildren(recordData)
+            .addOnSuccessListener {
+                Log.d("TAG", "onViewCreated: sukses attendance dates")
             }.addOnFailureListener {
                 Log.d("TAG", "onViewCreated: $it")
             }.addOnCompleteListener {
@@ -497,5 +602,61 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private val launcherRequestPermission =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            when {
+                permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] ?: false -> {
+                    // Precise location access granted.
+                    //getCurrentLocation()
+                }
+                else -> {
+                    // No location access granted.
+                }
+            }
+        }
+    private fun checkPermission(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            permission
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+    private fun getCurrentLocation(callback: (Double, Double) -> Unit) {
+        if (checkPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)){
+            // TODO: RETURN USER LOCATION
+
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    Toast.makeText(
+                        requireContext(),
+                        "LOCATION DETECTED AT ${location.latitude}, ${location.longitude}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    val latitude = location.latitude
+                    val longitude = location.longitude
+
+                    callback(latitude, longitude)
+
+
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        "No Location Detected",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    callback(0.0, 0.0)
+                }
+            }
+
+        } else{
+            launcherRequestPermission.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                )
+            )
+        }
+    }
 
 }

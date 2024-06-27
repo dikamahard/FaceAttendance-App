@@ -40,33 +40,32 @@
             android:id="@+id/btn_Camera"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="44dp"
+            android:layout_marginTop="8dp"
             android:text="Camera"
-            app:layout_constraintEnd_toEndOf="@+id/iv_preview"
-            app:layout_constraintHorizontal_bias="0.498"
-            app:layout_constraintStart_toStartOf="@+id/iv_preview"
-            app:layout_constraintTop_toBottomOf="@+id/iv_preview" />
+            android:visibility="invisible"
+            app:layout_constraintStart_toEndOf="@+id/btn_tes"
+            app:layout_constraintTop_toBottomOf="@+id/btn_tes" />
 
         <Button
             android:id="@+id/btn_process"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="20dp"
+            android:layout_marginTop="8dp"
             android:text="Process"
-            app:layout_constraintBottom_toBottomOf="@+id/btn_Camera"
-            app:layout_constraintEnd_toStartOf="@+id/btn_Camera"
-            app:layout_constraintTop_toTopOf="@+id/btn_Camera" />
+            android:visibility="invisible"
+            app:layout_constraintEnd_toStartOf="@+id/btn_tes"
+            app:layout_constraintTop_toBottomOf="@+id/btn_tes" />
 
         <Button
-            android:text="tes"
             android:id="@+id/btn_tes"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            app:layout_constraintBottom_toBottomOf="@+id/btn_Camera"
-            app:layout_constraintStart_toEndOf="@+id/btn_Camera"
-            app:layout_constraintTop_toTopOf="@+id/btn_Camera"
-            app:layout_constraintVertical_bias="0.0" />
+            android:layout_marginTop="24dp"
+            android:text="GPS"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.517"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/iv_preview" />
 
         <ImageView
             android:id="@+id/iv_result"
@@ -76,9 +75,21 @@
             android:layout_marginTop="44dp"
             android:adjustViewBounds="true"
             android:scaleType="fitXY"
+            tools:src="@drawable/noimg"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_name" />
+
+        <Button
+            android:id="@+id/btn_submit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Submit"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/iv_result" />
 
         <ProgressBar
             android:id="@+id/progress_bar_home"
@@ -88,8 +99,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            />
+            app:layout_constraintTop_toTopOf="parent" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
