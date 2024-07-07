@@ -10,7 +10,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="50dp"
+        android:layout_marginBottom="25dp"
         android:paddingVertical="10dp">
 
         <TextView
@@ -47,10 +47,11 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-    <HorizontalScrollView
-        android:id="@+id/view_horizontal"
+    <ScrollView
+        android:id="@+id/view_vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="7dp">
 <!--
         <TableLayout
             android:id="@+id/tbl_report"
@@ -121,5 +122,5 @@
         </TableLayout>
         -->
 
-    </HorizontalScrollView>
+    </ScrollView>
 </LinearLayout>

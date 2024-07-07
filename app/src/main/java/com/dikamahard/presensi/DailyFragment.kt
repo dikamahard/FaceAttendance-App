@@ -61,6 +61,7 @@ class DailyFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this)[DailyViewModel::class.java]
         // TODO: Use the ViewModel
+        // for actionbar name
         (activity as MainActivity).supportActionBar?.title = "Report"
 
         //val table = binding.tblReport
@@ -192,7 +193,7 @@ class DailyFragment : Fragment() {
 
         viewModel.selectedDate.observe(viewLifecycleOwner) {selectedDate ->
 
-            binding.viewHorizontal.removeView(tableLayout)
+            binding.viewVertical.removeView(tableLayout)
 
             val headerRow = TableRow(requireContext()).apply {
                 setBackgroundColor(resources.getColor(R.color.orange_500))
@@ -217,7 +218,7 @@ class DailyFragment : Fragment() {
                 })
             }
             tableLayout.addView(headerRow)
-            binding.viewHorizontal.addView(tableLayout)
+            binding.viewVertical.addView(tableLayout)
 
             lifecycleScope.launch(Dispatchers.Default) {
                 while (mappingNames) {
