@@ -61,6 +61,7 @@ class DailyFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this)[DailyViewModel::class.java]
         // TODO: Use the ViewModel
+        (activity as MainActivity).supportActionBar?.title = "Report"
 
         //val table = binding.tblReport
         val dateNow = "05-31-2024"      //DD-MM-YYYY
@@ -194,7 +195,7 @@ class DailyFragment : Fragment() {
             binding.viewHorizontal.removeView(tableLayout)
 
             val headerRow = TableRow(requireContext()).apply {
-                setBackgroundColor(resources.getColor(R.color.green))
+                setBackgroundColor(resources.getColor(R.color.orange_500))
                 addView(TextView(requireContext()).apply {
                     layoutParams = TableRow.LayoutParams(100, TableRow.LayoutParams.WRAP_CONTENT)
                     text = "Name"
@@ -231,7 +232,6 @@ class DailyFragment : Fragment() {
 
                 for (name in mappedUser) {
                     val userTime = database.reference.child("dates").child(selectedDate).child(name.key).get().await()
-                    Log.d("TAG", "${name.key}: ${userTime.childrenCount} ${userTime.value}")
                     if (userTime.childrenCount >= 2) {
                         timeIn = userTime.children.first().key.toString().substring(0,5)
                         timeOut = userTime.children.last().key.toString().substring(0,5)
@@ -244,13 +244,12 @@ class DailyFragment : Fragment() {
                     }
 
                     val dataRow = TableRow(requireContext()).apply {
-                        setBackgroundColor(resources.getColor(R.color.plain))
+                        setBackgroundColor(resources.getColor(R.color.orange_200))
                         setPadding(5, 5, 5, 5)
                         addView(TextView(context).apply {
                             layoutParams = TableRow.LayoutParams(100, TableRow.LayoutParams.WRAP_CONTENT)
                             text = name.value
                         })
-
                         addView(TextView(context).apply {
                             layoutParams = TableRow.LayoutParams(50, TableRow.LayoutParams.WRAP_CONTENT)
                             text = timeIn
