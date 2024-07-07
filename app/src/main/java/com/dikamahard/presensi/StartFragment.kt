@@ -27,12 +27,17 @@ class StartFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        (activity as MainActivity).supportActionBar?.title = "Home"
+
+
         binding.btnStart.setOnClickListener {
             findNavController().navigate(R.id.action_startFragment_to_homeFragment)
             Log.d("TAG", "onViewCreated: klik")
         }
 
+        binding.btnDailyReport.setOnClickListener {
+            findNavController().navigate(R.id.action_startFragment_to_dailyFragment)
+        }
     }
-
 
 }
