@@ -69,4 +69,10 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Use this dependency to bundle the model with your app
     implementation ("com.google.mlkit:face-detection:16.1.6")
+
+    //location
+    implementation("com.google.android.gms:play-services-location:18.0.0")
+
+    // exif
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 }

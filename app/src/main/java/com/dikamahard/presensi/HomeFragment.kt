@@ -1,6 +1,7 @@
 package com.dikamahard.presensi
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -21,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
@@ -103,6 +105,7 @@ class HomeFragment : Fragment() {
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -113,6 +116,8 @@ class HomeFragment : Fragment() {
                 REQUEST_CODE_PERMISSIONS
             )
         }
+        // for actionbar name
+        (activity as MainActivity).supportActionBar?.title = "Attendance"
 
         // VARIABLE NEEDED FOR IMAGE COMPARE
         lateinit var listOfBitmaps: List<Bitmap>
@@ -161,7 +166,15 @@ class HomeFragment : Fragment() {
 
 
         binding.btnCamera.setOnClickListener {
-            startCamera()
+            if (checkPermission(android.Manifest.permission.CAMERA)){
+                startCamera()
+            } else{
+                launcherRequestPermission.launch(
+                    arrayOf(
+                        android.Manifest.permission.CAMERA,
+                    )
+                )
+            }
         }
 
         /////////////// TODO: EXPERIMENT BUTTON
@@ -190,6 +203,7 @@ class HomeFragment : Fragment() {
              */
 //            val targetLat = -6.923384445321216  // unpad coordinate
 //            val targetLong = 107.77301948057257
+            
 
             val targetLat = -6.237438 // home coordinate
             val targetLong = 106.526787
@@ -217,7 +231,7 @@ class HomeFragment : Fragment() {
 
                 } else {
                     // No location detected, handle accordingly
-                    Log.d("TAG", "NO LOCATION")
+                    Log.d("TAG", "No Location, Please Activate GPS")
                 }
             }
 //            android.location.Location.distanceBetween(pointLat, pointLong, locationLat, locationLong, distance)
@@ -243,9 +257,7 @@ class HomeFragment : Fragment() {
             // compare
 
             // TODO: RESET CONDITION IF TAKING ANOTHER PICTURE
-            if (binding.btnSubmit.visibility == View.VISIBLE) {
-                binding.btnSubmit.visibility = View.INVISIBLE
-            }
+
 
             val tempFile = File.createTempFile("images", "jpg")
 
@@ -283,18 +295,20 @@ class HomeFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Default) {
                 while (processing1 || processing2) {
                     withContext(Dispatchers.Main) {
+                        //binding.tvName.visibility = View.VISIBLE
                         binding.tvName.text = "Processing Image"
                     }
                 }
 
-                withContext(Dispatchers.Main) {
-                    binding.tvName.text = "Processing Completed"
-                }
+//                withContext(Dispatchers.Main) {
+//                    binding.tvName.text = "Processing Completed"
+//                }
 
                 // TODO: COMPARE FACES(done) --> ADD CONDITION IF DIDN'T FIND MATCHING FACE
                 Log.d("COMPARE", "before compare")
                 var i = 0
                 var faceMatched = false
+
                 for (croppedMasterBitmap in listOfCroppedBitmaps){
                     val similarity = mfn.compare(croppedCaptureBitmap, croppedMasterBitmap)
                     Log.d("COMPARE", "comparing ${listOfNames[i]} = $similarity")
@@ -304,10 +318,15 @@ class HomeFragment : Fragment() {
                     if (similarity > MobileFaceNet.THRESHOLD) {
                         Log.d("COMPARE", "compare found")
                         faceMatched = true
+                        withContext(Dispatchers.Main) {
+                            binding.tvName.visibility = View.VISIBLE
+                            binding.tvName.text = "${listOfNames[i].split('.')[0]}'s Face Detected"
+                        }
 
                         // TODO: GET image name then Record to database (done) --> change to be button press to post attendance(done)
 
                         withContext(Dispatchers.Main) {
+                            binding.ivResult.visibility = View.VISIBLE
                             binding.ivResult.setImageBitmap(croppedMasterBitmap)
                             binding.btnSubmit.apply {
                                 this.visibility = View.VISIBLE
@@ -329,6 +348,8 @@ class HomeFragment : Fragment() {
                             "Face Not Found",
                             Toast.LENGTH_SHORT
                         ).show()
+
+                        binding.tvName.text = "Unknown Face"
                     }
                 }
                 Log.d("COMPARE", "compare done")
@@ -389,6 +410,8 @@ class HomeFragment : Fragment() {
                             "${e.message}",
                             Toast.LENGTH_SHORT
                         ).show()
+
+                        binding.tvName.text = "Error, ${e.message}"
                     }
                 }
                 Log.d("COROUTINE", "AFTER FACEDETECT "+ Thread.currentThread().name)
@@ -432,6 +455,7 @@ class HomeFragment : Fragment() {
 
                 Log.d("COROUTINE", "Called after detecting faces "+ Thread.currentThread().name)
 
+                // to check list of name detected in firebase
 //                withContext(Dispatchers.Main){
 //                    for (i in 0 until listOfCroppedBitmaps.size) {
 //                        binding.ivPreview.setImageBitmap(listOfCroppedBitmaps[i])
@@ -546,13 +570,22 @@ class HomeFragment : Fragment() {
     ) {
         if(it.resultCode == AppCompatActivity.RESULT_OK) {
             val myFile = File(currentPhotoPath)
-            getFile = myFile    //  TODO: this is what we will upload
+            getFile = myFile    //  TODO: this is what we will upload (done)
             myFile.let { file ->
                 val bitmap = BitmapFactory.decodeFile(file.path)
                 val matrix = Matrix()
-                matrix.postRotate(-90f)
+                // dynamic camera rotation from exif
+                val rotation = ExifInterface(file).rotationDegrees
+                Log.d("TAG", "Rotation : $rotation")
+                matrix.postRotate(rotation.toFloat())
                 val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-                //binding.ivPreview.setImageBitmap(bitmap)
+                binding.ivPreview.setImageBitmap(rotatedBitmap)
+                // TODO: RESET CONDITION HERE
+                binding.ivResult.visibility = View.INVISIBLE
+                if (binding.btnSubmit.visibility == View.VISIBLE) {
+                    binding.btnSubmit.visibility = View.INVISIBLE
+                }
+
             }
         }
     }
@@ -574,6 +607,7 @@ class HomeFragment : Fragment() {
         database.reference.child(RECORD).child(id).child(currentDate).updateChildren(recordData)
             .addOnSuccessListener {
                 Log.d("TAG", "onViewCreated: sukses attendance record")
+                Toast.makeText(requireContext(), "Attendance Record Submitted", Toast.LENGTH_SHORT).show()
             }.addOnFailureListener {
                 Log.d("TAG", "onViewCreated: $it")
             }.addOnCompleteListener {
