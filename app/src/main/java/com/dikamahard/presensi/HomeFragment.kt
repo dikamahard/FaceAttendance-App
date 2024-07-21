@@ -208,6 +208,9 @@ class HomeFragment : Fragment() {
             val targetLat = -6.237438 // home coordinate
             val targetLong = 106.526787
 
+//            val targetLat = 80.01685951702866 // greenland coordinate
+//            val targetLong = -46.644851699388674
+
             val distance = FloatArray(1)
             getCurrentLocation{ latitude,longitude ->
                 // Use latitude and longitude for your conditional check
@@ -216,7 +219,7 @@ class HomeFragment : Fragment() {
                     android.location.Location.distanceBetween(targetLat, targetLong, latitude, longitude, distance)
                     Log.d("TAG", "lat long: $latitude, $longitude")
                     Log.d("TAG", "Distance: ${distance[0]}")
-                    if (distance[0] <= 1000) {
+                    if (distance[0] <= 1000) {  // meters
                         binding.btnProcess.visibility = View.VISIBLE
                         binding.btnCamera.visibility = View.VISIBLE
                     }else{
@@ -292,65 +295,73 @@ class HomeFragment : Fragment() {
             var processing2 = true
 
             // improve with livedata
-            lifecycleScope.launch(Dispatchers.Default) {
-                while (processing1 || processing2) {
-                    withContext(Dispatchers.Main) {
-                        //binding.tvName.visibility = View.VISIBLE
-                        binding.tvName.text = "Processing Image"
-                    }
-                }
 
-//                withContext(Dispatchers.Main) {
+            lifecycleScope.launch(Dispatchers.Default) {
+                try {
+                    while (processing1 || processing2) {
+                        withContext(Dispatchers.Main) {
+                            //binding.tvName.visibility = View.VISIBLE
+                            binding.tvName.text = "Processing Image"
+                        }
+                    }
+                    Log.d("TAG", "onViewCreated: 1 in")
+
+
+                    //                withContext(Dispatchers.Main) {
 //                    binding.tvName.text = "Processing Completed"
 //                }
 
-                // TODO: COMPARE FACES(done) --> ADD CONDITION IF DIDN'T FIND MATCHING FACE
-                Log.d("COMPARE", "before compare")
-                var i = 0
-                var faceMatched = false
+                    // TODO: COMPARE FACES(done) --> ADD CONDITION IF DIDN'T FIND MATCHING FACE
+                    Log.d("COMPARE", "before compare")
+                    var i = 0
+                    var faceMatched = false
 
-                for (croppedMasterBitmap in listOfCroppedBitmaps){
-                    val similarity = mfn.compare(croppedCaptureBitmap, croppedMasterBitmap)
-                    Log.d("COMPARE", "comparing ${listOfNames[i]} = $similarity")
-                    withContext(Dispatchers.Main) {
-                        binding.ivResult.setImageBitmap(croppedMasterBitmap)
-                    }
-                    if (similarity > MobileFaceNet.THRESHOLD) {
-                        Log.d("COMPARE", "compare found")
-                        faceMatched = true
+                    for (croppedMasterBitmap in listOfCroppedBitmaps){
+                        val similarity = mfn.compare(croppedCaptureBitmap, croppedMasterBitmap)
+                        Log.d("COMPARE", "comparing ${listOfNames[i]} = $similarity")
                         withContext(Dispatchers.Main) {
-                            binding.tvName.visibility = View.VISIBLE
-                            binding.tvName.text = "${listOfNames[i].split('.')[0]}'s Face Detected"
-                        }
-
-                        // TODO: GET image name then Record to database (done) --> change to be button press to post attendance(done)
-
-                        withContext(Dispatchers.Main) {
-                            binding.ivResult.visibility = View.VISIBLE
                             binding.ivResult.setImageBitmap(croppedMasterBitmap)
-                            binding.btnSubmit.apply {
-                                this.visibility = View.VISIBLE
-                                this.setOnClickListener {
-                                    postAttendance(listOfNames[i])
+                        }
+                        if (similarity > MobileFaceNet.THRESHOLD) {
+                            Log.d("COMPARE", "compare found")
+                            faceMatched = true
+                            withContext(Dispatchers.Main) {
+                                binding.tvName.visibility = View.VISIBLE
+                                binding.tvName.text = "${listOfNames[i].split('.')[0]}'s Face Detected"
+                            }
+
+                            // TODO: GET image name then Record to database (done) --> change to be button press to post attendance(done)
+
+                            withContext(Dispatchers.Main) {
+                                binding.ivResult.visibility = View.VISIBLE
+                                binding.ivResult.setImageBitmap(croppedMasterBitmap)
+                                binding.btnSubmit.apply {
+                                    this.visibility = View.VISIBLE
+                                    this.setOnClickListener {
+                                        postAttendance(listOfNames[i])
+                                    }
                                 }
                             }
+                            break
                         }
-                        break
+                        i+=1
                     }
-                    i+=1
-                }
 
-                if (!faceMatched) {
+                    if (!faceMatched) {
+                        throw Exception("Face Not Found!!")
+                    }
+                } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         binding.ivResult.setImageResource(R.drawable.noimg)
                         Toast.makeText(
                             requireContext(),
-                            "Face Not Found",
+                            "${e.message}",
                             Toast.LENGTH_SHORT
                         ).show()
 
                         binding.tvName.text = "Unknown Face"
                     }
+                    Log.e("COMPARE ERROR", "exception ${e.message}")
                 }
                 Log.d("COMPARE", "compare done")
 
@@ -369,8 +380,10 @@ class HomeFragment : Fragment() {
                 Log.d("DEBUG", "After " + resizedBitmap.width + " x "+ resizedBitmap.height)
 
                 // rotate bitmap
+                val rotation = ExifInterface(getFile!!).rotationDegrees
+                Log.d("TAG", "Rotation on detect face : $rotation")
                 val matrix = Matrix()
-                matrix.postRotate(-90f)
+                matrix.postRotate(rotation.toFloat())
                 val rotatedBitmap = Bitmap.createBitmap(resizedBitmap, 0, 0, resizedBitmap.width, resizedBitmap.height, matrix, true)
 
 
@@ -419,7 +432,6 @@ class HomeFragment : Fragment() {
             }
 
 
-
             // Process 2 detect face from firebase
             lifecycleScope.launch(Dispatchers.Default) {
                 for (bitmap in listOfBitmaps) {
@@ -465,6 +477,7 @@ class HomeFragment : Fragment() {
 //                    }
 //                }
             }
+
 
 
             // THIS BLOCKING UI THREAD / MAIN
@@ -576,7 +589,7 @@ class HomeFragment : Fragment() {
                 val matrix = Matrix()
                 // dynamic camera rotation from exif
                 val rotation = ExifInterface(file).rotationDegrees
-                Log.d("TAG", "Rotation : $rotation")
+                Log.d("TAG", "Rotation on camera capture: $rotation")
                 matrix.postRotate(rotation.toFloat())
                 val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
                 binding.ivPreview.setImageBitmap(rotatedBitmap)
