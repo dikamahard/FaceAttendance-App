@@ -2,6 +2,7 @@ package com.example.faceverify.models.mfn
 
 import android.content.res.AssetManager
 import android.graphics.Bitmap
+import android.util.Log
 import com.example.faceverify.utils.FaceUtils
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
@@ -9,7 +10,7 @@ import kotlin.math.pow
 
 class MobileFaceNet(assetManager: AssetManager?) {
 
-    private val interpreter: Interpreter
+    private var interpreter: Interpreter
 
     fun compare(bitmap1: Bitmap?, bitmap2: Bitmap?): Float {
         val bitmapScale1 = Bitmap.createScaledBitmap(
@@ -88,7 +89,7 @@ class MobileFaceNet(assetManager: AssetManager?) {
         const val THRESHOLD = 0.8f
     }
 
-    init {
+    init {/*
         val options = Interpreter.Options()
         val delegate = GpuDelegate()
         options.addDelegate(delegate)
@@ -98,6 +99,28 @@ class MobileFaceNet(assetManager: AssetManager?) {
                 assetManager!!,
                 MODEL_FILE
             ), options
-        )
+        )*/
+
+        // GPU Delegate Fix for Phone without GPU
+        try {
+            // Initialize the GPU delegate
+            val gpuDelegate = GpuDelegate()
+            val options = Interpreter.Options().addDelegate(gpuDelegate)
+            //interpreter = Interpreter(loadModelFile(), options)
+            interpreter = Interpreter(
+                FaceUtils.loadModelFile(
+                    assetManager!!,
+                    MODEL_FILE
+                ), options
+            )
+            Log.d("MobileFaceNet", "GPU delegate initialized successfully")
+        } catch (e: Exception) {
+            Log.e("MobileFaceNet", "GPU delegate initialization failed, falling back to CPU", e)
+            // Fallback to CPU delegate if GPU initialization fails
+            interpreter = Interpreter( FaceUtils.loadModelFile(
+                assetManager!!,
+                MODEL_FILE
+            ))
+        }
     }
 }
