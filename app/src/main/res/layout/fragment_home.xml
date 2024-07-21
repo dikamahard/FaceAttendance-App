@@ -9,7 +9,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingBottom="100dp">
+        android:paddingBottom="50dp">
 
         <ImageView
             android:id="@+id/iv_preview"
@@ -34,7 +34,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.506"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_tes" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_gps" />
 
         <Button
             android:id="@+id/btn_Camera"
@@ -43,8 +43,8 @@
             android:layout_marginTop="8dp"
             android:text="Camera"
             android:visibility="invisible"
-            app:layout_constraintStart_toEndOf="@+id/btn_tes"
-            app:layout_constraintTop_toBottomOf="@+id/btn_tes" />
+            app:layout_constraintStart_toEndOf="@+id/btn_gps"
+            app:layout_constraintTop_toBottomOf="@+id/btn_gps" />
 
         <Button
             android:id="@+id/btn_process"
@@ -53,11 +53,11 @@
             android:layout_marginTop="8dp"
             android:text="Process"
             android:visibility="invisible"
-            app:layout_constraintEnd_toStartOf="@+id/btn_tes"
-            app:layout_constraintTop_toBottomOf="@+id/btn_tes" />
+            app:layout_constraintEnd_toStartOf="@+id/btn_gps"
+            app:layout_constraintTop_toBottomOf="@+id/btn_gps" />
 
         <Button
-            android:id="@+id/btn_tes"
+            android:id="@+id/btn_gps"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
@@ -72,24 +72,23 @@
             android:layout_width="match_parent"
             android:layout_height="400dp"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="44dp"
+            android:layout_marginTop="16dp"
             android:adjustViewBounds="true"
             android:scaleType="fitXY"
-            tools:src="@drawable/noimg"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_name" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_submit"
+            tools:src="@drawable/noimg" />
 
         <Button
             android:id="@+id/btn_submit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
             android:text="Submit"
             android:visibility="invisible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/iv_result" />
+            app:layout_constraintTop_toBottomOf="@+id/tv_name" />
 
         <ProgressBar
             android:id="@+id/progress_bar_home"

@@ -168,6 +168,7 @@ class HomeFragment : Fragment() {
         binding.btnCamera.setOnClickListener {
             if (checkPermission(android.Manifest.permission.CAMERA)){
                 startCamera()
+                binding.btnProcess.visibility = View.VISIBLE
             } else{
                 launcherRequestPermission.launch(
                     arrayOf(
@@ -179,7 +180,7 @@ class HomeFragment : Fragment() {
 
         /////////////// TODO: EXPERIMENT BUTTON
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-        binding.btnTes.setOnClickListener {
+        binding.btnGps.setOnClickListener {
             /*
             val time = Calendar.getInstance().time
             var formatter = SimpleDateFormat("dd-MM-yyyy")
@@ -220,7 +221,6 @@ class HomeFragment : Fragment() {
                     Log.d("TAG", "lat long: $latitude, $longitude")
                     Log.d("TAG", "Distance: ${distance[0]}")
                     if (distance[0] <= 1000) {  // meters
-                        binding.btnProcess.visibility = View.VISIBLE
                         binding.btnCamera.visibility = View.VISIBLE
                     }else{
                         Toast.makeText(

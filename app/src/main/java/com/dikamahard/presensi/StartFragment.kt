@@ -27,6 +27,7 @@ class StartFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // for actionbar name
         (activity as MainActivity).supportActionBar?.title = "Home"
 
 
